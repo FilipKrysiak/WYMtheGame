@@ -1,0 +1,10 @@
+body {
+	margin: 0 auto;
+  width: 768px;
+  background-color: black;
+}
+
+@media (max-width: 800px) {
+  body{width: 384px;}
+  canvas {width: 384px; height: 224px;}
+}
