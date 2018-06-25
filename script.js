@@ -27,10 +27,10 @@ function environment(number){
 }
 
 function drawEnv(world){
-  for (let i=0; i<14; i++){
-    for (let j=0; j<24; j++){
-  environment(world[((i+1)*(j+1)-1)]);
-  ctx.fillRect((j*32),(i*32),32,32);
-    }
+  for (let i=0; i<world.length; i++){
+    let posX = i-(24*Math.floor(i/24));
+    let posY = Math.floor(i/24);
+    environment(world[i]);
+    ctx.fillRect(posX,posY,32,32);
   }
 }
