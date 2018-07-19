@@ -1,75 +1,10 @@
 let canvasElem = document.getElementById('playerScreen');
 let ctx = canvasElem.getContext('2d');
-
+let paths = [];
 let env = [];
 let bckgrd = new Image();
 
-createEnv(randomFD(), createFirstArray(), Math.floor(Math.random()*3 + 2));
-
-function createFirstArray(){
-  let firstArray = [];
-  let rndmNmbr = Math.floor(Math.random() * (19-5) + 5);
-  for (let i=-1; i<2; i++){
-  firstArray[rndmNmbr+i] = 3;}
-  return firstArray;
-}
-
-function randomFD(){
-  let random = ["U","D"];
-  return random[Math.floor(Math.random() * 2)];
-}
-
-function drawFrame(){
-  ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
-  drawEnv(env);
-}
-
-function createEnv(direction, firstRow, paths){
-  if (direction === "U"){
-    for (let i=0; i<24; i++){env[i] = firstRow[i];}}
-  else if (direction === "D"){
-    for (let i=0; i<24; i++){env[i+312] = firstRow[i];}}
-  else if (direction === "L"){
-    for (let i=0; i<14; i++){env[i*24] = firstRow[i];}}
-  else if (direction === "R"){
-    for (let i=0; i<14; i++){env[i*24 + 23] = firstRow[i];}}
-
-  let pathDir = [0,0,0,0];
-  for (let i=0; i<24; i++){
-    if (env[i] === 3){pathDir[0]=1;}
-    if (env[i+312] === 3){pathDir[3]=1;}
-  }
-  for (let i=0; i<14; i++){
-    if (env[i*24] === 3){pathDir[1]=1;}
-    if (env[i*24+23] === 3){pathDir[2]=1;}
-  }
-  let pathDirSum = 0;
-  countPDS();
-  function countPDS(){
-  pathDirSum = 0;
-  for (let i=0; i<pathDir.length; i++){pathDirSum += pathDir[i]}
-  if (pathDirSum < paths){
-    let rndPathDir = Math.floor(Math.random() * pathDir.length);
-    if (pathDir[rndPathDir] === 0){pathDir[rndPathDir] = 1;}
-    countPDS();
-    }
-  }
-
-  if (pathDir[0] === 1 && direction != "U"){let boundArray = createBoundArray(0); for (let i=0; i<24; i++){env[i] = boundArray[i];}}
-  if (pathDir[1] === 1 && direction != "L"){let boundArray = createBoundArray(1); for (let i=0; i<14; i++){env[i*24] = boundArray[i];}}
-  if (pathDir[2] === 1 && direction != "R"){let boundArray = createBoundArray(2); for (let i=0; i<14; i++){env[i*24 + 23] = boundArray[i];}}
-  if (pathDir[3] === 1 && direction != "D"){let boundArray = createBoundArray(3); for (let i=0; i<24; i++){env[i+312] = boundArray[i];}}
-
-  console.log("build roads: " + buildRoads(pathDir));
-
-//  for (let i=0; i<336; i++){
-//    if (env[i] == null){env[i] = Math.floor(Math.random() * 3);}
-//  }
-
-  console.log(env);
-  console.log(direction, paths, pathDir, pathDirSum);
-  drawFrame();
-}
+pathGenerator();
 
 function environment(number, posX, posY){
   bckgrd.src = "gfx/1.png";
@@ -79,8 +14,12 @@ function environment(number, posX, posY){
     if (number === 2){
       //ctx.fillStyle = "#a3d444";
       //ctx.fillRect((j*32),(i*32),32,32);
-      ctx.drawImage(bckgrd, 192, 416, 32, 32, posX * 32, posY * 32,32,32);}
-    if (number === 3){ctx.drawImage(bckgrd, 192, 608, 32, 32, posX * 32, posY * 32,32,32);}
+      ctx.drawImage(bckgrd, 32, 32, 32, 32, posX * 32, posY * 32,32,32);}
+    if (number === 3){ctx.drawImage(bckgrd, 32, 608, 32, 32, posX * 32, posY * 32,32,32);}
+    if (number === 13){
+      ctx.drawImage(bckgrd, 32, 32, 32, 32, posX * 32, posY * 32,32,32);
+      ctx.drawImage(bckgrd, 0, 608, 32, 32, posX * 32, posY * 32,32,32);
+    }
   });
 }
 
@@ -89,57 +28,87 @@ function drawEnv(world){
     let posX = i-(24*Math.floor(i/24));
     let posY = Math.floor(i/24);
     environment(world[i], posX, posY);
-
   }
 }
 
-function createBoundArray(bounds){
-  let rndmNmbr = 0;
-  let boundArray = [];
-  if (bounds === 0 || bounds === 3){rndmNmbr = Math.floor(Math.random() * (19-5) + 5);}
-  else if (bounds === 1 || bounds === 2){rndmNmbr = Math.floor(Math.random() * (9-5) + 5);}
-  for (let i=-1; i<2; i++){
-  boundArray[rndmNmbr+i] = 3;}
-  return boundArray;
+function switchMap(){
+  //funkcja generująca entryDirection "ULRD" i zmieniająca pathsy miejscami L-P, G-D, lub sprawdzająca powrót do bazy
 }
 
-function buildRoads(pathDir){
-  let pathDirSum = 0;
-  let pos = [];
-    for (let i=0; i<pathDir.length; i++){
-      pathDirSum += pathDir[i];
-      if (pathDir[i] === 1){
-      pos[2*i] = 0;
-      pos[2*i+1] = 0;}
+function pathGenerator(entryDirection){
+  let pathSum = 0;
+  while (true){
+    pathSum = 0;
+    if (entryDirection != "U"){
+      paths[0] = Math.round(Math.random()) * (Math.floor((Math.random()* 16)) + 4);
     }
-  if (pathDir[0] === 1){for (let i=0; i<24; i++)
-    {if (env[i] === 3 && env[i-1] === 3 && env[i+1] === 3){pos[0]=i; pos[1]=0;}}
-  }
-  if (pathDir[1] === 1){for (let i=0; i<14; i++)
-    {if (env[24*i] === 3 && env[24*(i-1)] === 3 && env[24*(i+1)] === 3){pos[2]=0; pos[3]=i;}}
-  }
-  if (pathDir[2] === 1){for (let i=0; i<14; i++)
-    {if (env[24*i+23] === 3 && env[24*(i-1)+23] === 3 && env[24*(i+1)+23] === 3){pos[4]=23; pos[5]=i;}}
-  }
-  if (pathDir[3] === 1){for (let i=0; i<24; i++)
-    {if (env[i+312] === 3 && env[i+311] === 3 && env[i+313] === 3){pos[6]=i; pos[7]=13;}}
-  }
-
-  let sizeX = [];
-  let sizeY = [];
-
-  if (pathDirSum === 2){
-    for (let i=0; i<=pos.length; i+=2){
-      if (pos[i] != null){
-      sizeX.push(pos[i]);}
+    if (paths[0] != 0){pathSum++;}
+    if (entryDirection != "L"){
+      paths[1] = Math.round(Math.random()) * ((Math.floor((Math.random() * 6)) * 24) + 96);
     }
-    for (let i=1; i<=pos.length; i+=2){
-      if (pos[i] != null){
-      sizeY.push(pos[i]);}
+    if (paths[1] != 0){pathSum++;}
+    if (entryDirection != "R"){
+      paths[2] = Math.round(Math.random()) * ((Math.floor((Math.random() * 6)) * 24) + 119);
     }
-    sizeX = sizeX[1]-sizeX[0];
-    sizeY = sizeY[1]-sizeY[0];
+    if (paths[2] != 0){pathSum++;}
+    if (entryDirection != "D"){
+      paths[3] = Math.round(Math.random()) * (Math.floor((Math.random() * 16)) + 316);
+    }
+    if (paths[3] != 0){pathSum++;}
+    if (pathSum ==2){break;}
   }
+  for (let i=0; i<paths.length; i++){
+    if (paths[i] < 2  ){paths[i] = null;}
+  }
+  console.log(paths);
+  pathJoiner(paths, pathSum);
+}
 
-  return sizeX;
+function pathJoiner(paths, pathSum){
+  console.log(pathSum)
+  let pathsLngth = [];
+  let startY = 0;
+  for (let i=0; i<paths.length; i++){
+    if (paths[i] != null){pathsLngth.push(paths[i]);}
+  }
+  pathsLngth.sort(compareNo);
+  let pathsX = pathsLngth[1]%24 - pathsLngth[0]%24;
+  //if (pathsX > 0){pathsX +=1;}
+  //else {pathsX -= 1;}
+  let pathsY = Math.floor(pathsLngth[1]/24) - Math.floor(pathsLngth[0]/24) + 1;
+  if (pathSum == 2){
+    console.log("Case 1 ");
+    console.log(pathsX, pathsY);
+    for (let i=0; i<pathsY; i++){
+      startX = (pathsX / pathsY) * (i + 1);
+      for (let j=0; j<Math.floor(Math.abs(pathsX/pathsY)) + 1; j++){
+        console.log(i, (Math.floor(startX) + j));
+        env[pathsLngth[0] + Math.floor(startX) + j + i * 24] = 3;
+      //if (Math.floor(startX) + j == pathsX){break;}
+      }
+    }
+
+  }
+  else if (pathSum == 3){
+    console.log("Case 2");
+  }
+  else if (pathSum == 4){
+    console.log("Case 3");
+  }
+  else {
+    console.log("No road");
+  }
+  for (let i=0; i<336; i++){
+    if (env[i] !=3){
+      env[i] = Math.floor(Math.random()*3);
+    }
+  }
+  for (let i=0; i<pathsLngth.length; i++){
+    env[pathsLngth[i]] = 3;
+  }
+  drawEnv(env);
+}
+
+function compareNo(a, b) {
+    return a - b;
 }
